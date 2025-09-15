@@ -1,0 +1,142 @@
+﻿@model IEnumerable<ToDo>
+
+<div class="row">
+    <div class="col-md-2">
+        <!-- Filters -->
+        <form asp-action="Filter" method="post">
+            <div class="mb-3">
+                <label class="form-label">Category</label>
+                <select name="categoryFilter" class="form-select"
+                        asp-items="@(new SelectList(ViewBag.Categories, "CategoryId", "Name", ViewBag.Filters.CategoryId))">
+                    <option value="all">All</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Due:</label>
+                <select name="dueFilter" class="form-select"
+                        asp-items="@(new SelectList(ViewBag.DueFilters, "Key", "Value", ViewBag.Filters.Due))">
+                    <option value="all">All</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Status:</label>
+                <select name="statusFilter" class="form-select"
+                        asp-items="@(new SelectList(ViewBag.Statuses, "StatusId", "Name", ViewBag.Filters.StatusId))">
+                    <option value="all">All</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a asp-action="Index" class="btn btn-secondary">Clear</a>
+        </form>
+    </div>
+
+    <div class="col-md-10">
+        <!-- Open Tasks Table -->
+        <h3>Open Tasks</h3>
+        <form asp-action="MarkComplete" method="post" asp-route-id="@ViewBag.Filters.FilterString">
+            <table class="table table-bordered table-striped mt-2">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in Model.Where(t => t.Status != null &&
+                                        t.Status.Name.Equals("Open", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        string overdue = task.Overdue ? "bg-warning" : "";
+                        <tr>
+                            <td>@task.Description</td>
+                            <td>@task.Category?.Name</td>
+                            <td class="@overdue">
+                                <form asp-action="UpdateDueDate" method="post" class="d-flex">
+                                    <input type="hidden" name="id" value="@task.Id" />
+                                    <input type="date" name="dueDate"
+                                           value="@task.DueDate?.ToString("yyyy-MM-dd")"
+                                           class="form-control" />
+                                    
+                                </form>
+                            </td>
+                            <td class="@overdue">@task.Status?.Name</td>
+                            <td>
+                                <button type="submit" class="btn btn-primary btn-sm"
+                                        name="@nameof(ToDo.Id)" value="@task.Id">
+                                    Mark Completed
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </form>
+
+        <!-- Completed Tasks Table -->
+        @if (Model.Any(t => t.Status != null && t.Status.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase)))
+        {
+            <h3 class="mt-5">Completed Tasks</h3>
+            <table class="table table-bordered table-striped mt-2">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Due Date</th>
+                        <th>Completed At</th>
+                        <th>Time Difference (Days)</th>
+                        <th>Performance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var task in Model.Where(t => t.Status != null &&
+                                    t.Status.Name.Equals("Completed", StringComparison.OrdinalIgnoreCase)))
+                    {
+                        int? daysDifference = null;
+                        string performance = "N/A";
+
+                        if (task.CompletedAt.HasValue && task.DueDate.HasValue)
+                        {
+                            daysDifference = (task.DueDate.Value.Date - task.CompletedAt.Value.Date).Days;
+
+                            if (daysDifference == 0)
+                                performance = "On Time";
+                            else if (daysDifference > 0)
+                                performance = $"{daysDifference} Days Early";
+                            else
+                                performance = $"{Math.Abs(daysDifference.Value)} Days Late";
+                        }
+
+                        <tr>
+                            <td>@task.Description</td>
+                            <td>@task.Category?.Name</td>
+                            <td>@task.DueDate?.ToString("yyyy-MM-dd")</td>
+                            <td>@task.CompletedAt?.ToString("yyyy-MM-dd")</td>
+                            <td>@(daysDifference.HasValue? daysDifference + " days" : "N/A")</td>
+                            <td>@performance</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p class="text-muted mt-4">No completed tasks found.</p>
+        }
+
+        <!-- Buttons -->
+        <form asp-action="DeleteComplete" method="post" asp-route-id="@ViewBag.Filters.FilterString">
+            <a asp-action="Add" class="btn btn-primary">Add new task</a>
+            <button type="submit" class="btn btn-danger">Delete completed tasks</button>
+        </form>
+
+        <!-- Back Button -->
+        <div class="mt-4">
+            <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+        </div>
+    </div>
+</div>

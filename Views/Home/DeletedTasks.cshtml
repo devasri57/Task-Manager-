@@ -1,0 +1,57 @@
+﻿@using ToDo.Models
+@model IEnumerable<ToDo>
+
+@{
+    ViewBag.Title = "Deleted Tasks";
+}
+
+<h2 class="mb-3">Deleted Tasks</h2>
+
+@if (!Model.Any())
+{
+    <p>No deleted tasks found.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Status</th>
+                <th>Due Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var task in Model)
+            {
+                <tr>
+                    <td>@task.Description</td>
+                    <td>@task.Category?.Name</td>
+                    <td>@task.Status?.Name</td>
+                    <td>@task.DueDate?.ToShortDateString()</td>
+                    <td>
+                        <!-- Restore -->
+                        <form asp-action="RestoreTask" method="post" style="display:inline">
+                            <input type="hidden" name="id" value="@task.Id" />
+                            <button type="submit" class="btn btn-success btn-sm">Restore</button>
+                        </form>
+
+                        <!-- Permanent Delete -->
+                        <form asp-action="PermanentDelete" method="post" style="display:inline"
+                              onsubmit="return confirm('Are you sure you want to permanently delete this task?');">
+                            <input type="hidden" name="id" value="@task.Id" />
+                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+<!-- Back Button -->
+<div class="mt-4">
+    <a asp-action="Index" class="btn btn-secondary">Back</a>
+</div>
